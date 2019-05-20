@@ -2,40 +2,36 @@ import docx
 from docx import Document
 from docx.enum.text import WD_COLOR_INDEX
 from docx.enum.style import WD_STYLE_TYPE
+import sys
 import operator
 import collections
 
 def main():
 
-    motifs = input("Please input motifs you would like to check for, with a space in between each motif: ")
+    inputs = ParseArgs(sys.argv)
+    motifs_input = inputs[0]
+    files_list = inputs[1]
+    window = inputs[2]
+    motif_size = inputs[3]
+
     motifs_dict1 = {}
     motif_possibilities = {}
     motifs_generated = [] #list of all motifs generated from input motifs with n in them or variations (need to implement)
     start_site_dict = {}
-    motifs_input = motifs.split()
     for motif in motifs_input:
-        motif_possibilities[motif] = GenerateComplementsForAll(motif)
+        motif_possibilities[motif] = GenerateComplements(motif)
         motifs_dict1[motif] = {}
 
-    print(motif_possibilities)
-
-
-
-    files = input("Please input the files you wish to search, with a space between each file path: ")
-    files_list = []
-    files_list = files.split()
     sequences_dict = {} #dictionary where key is alignment and value is list of alignment
     files_dict = {} #dictionary where the key is the file and vaule is its alignments
 
-    window = int(input("Please input window size you would like to search: "))
-    motif_size = int(input("What is the size of the motifs which you want to search for? "))
     newfiles_list = []
     for filename in files_list:
         #/Users/jasiel/Desktop/Molgulid.mesp.alignments.edited_highlighted_motifs.docx
-        new_filename = filename + "_highlighted_motifs.docx"
-        new_file = docx.Document()
-        new_file.save(new_filename)
-        newfiles_list.append(new_file)
+        #new_filename = filename + "_highlighted_motifs.docx"
+        #new_file = docx.Document()
+        #new_file.save(new_filename)
+        #newfiles_list.append(new_file)
         file = open(filename, "r")
         sequence_as_list = file.readlines()
         '''
@@ -97,8 +93,8 @@ def main():
             atgFound = False
             while i in range(len(sequence1)):
                 if atgFound == True:
-                    if (i - 4) >= 0:
-                        potential_motif1 = sequence1[i - 4:i]
+                    if (i - motif_size) >= 0:
+                        potential_motif1 = sequence1[i - motif_size:i]
                         n_occurence = 0
                         for char in potential_motif1:
                             if "N" == char:
@@ -107,7 +103,6 @@ def main():
                             complement = GenerateComplement(potential_motif1)
                             for k in range(len(motif_possibilities.keys())):
                                 if potential_motif1 in motif_possibilities[keys[k]] or complement in motif_possibilities[keys[k]]:
-                                    print(motifs_dict1[keys[k]][filename][name])
                                     motifs_dict1[keys[k]][filename][name].append(i)
 
 
@@ -123,24 +118,6 @@ def main():
                         i -= 1
                     elif atgFound == True:
                         i = start_site
-                        """
-                        if potential_motif1 in motifs_dict1:
-                            motifs_dict1[potential_motif1][filename][name].append(i)
-                        elif complement in motifs_dict1:
-                            motifs_dict1[complement][filename][name].append(i)
-                        else:
-                            try:
-                                index_motif = motifs_generated.index(potential_motif1)
-                                #curr_motif = motifs_with_n[int(index_motif/8)]
-                                motifs_dict1[curr_motif][filename][name].append(i)
-                            except ValueError:
-                                try:
-                                    index_motif = motifs_generated.index(complement)
-                                    #curr_motif = motifs_with_n[int(index_motif/8)]
-                                    motifs_dict1[curr_motif][filename][name].append(i)
-                                except ValueError:
-                                    pass
-                                    """
 
     cluster = {}
     window_in_list = {}
@@ -365,6 +342,55 @@ def main():
 #change function names to proper format "def word_word_word"
 
 #gives index of co-motif occurences around a certain window of a motif
+
+def ParseArgs(inputs):
+    i = 0
+    motifs_input = []
+    onMotifs = False
+    files_list = []
+    onFiles = False
+    window = 30
+    onWindow = False
+    motif_size = 4
+    onSize = False
+    while i < len(inputs):
+        if inputs[i] == "-m":
+            onMotifs = True
+            onFiles = False
+            onWindow = False
+            onSize = False
+            i += 1
+        elif inputs[i] == "-f":
+            onMotifs = False
+            onFiles = True
+            onWindow = False
+            onSize = False
+            i += 1
+        elif inputs[i] == "-ws":
+            onMotifs = False
+            onFiles = False
+            onWindow = True
+            onSize = False
+            i += 1
+        elif inputs[i] == "-ms":
+            onMotifs = False
+            onFiles = False
+            onWindow = False
+            onSize = True
+            i += 1
+
+        if onMotifs == True:
+            motifs_input.append(inputs[i])
+        elif onFiles == True:
+            files_list.append(inputs[i])
+        elif onWindow == True:
+            window = int(inputs[i])
+        elif onSize == True:
+            motif_size = int(inputs[i])
+
+        i += 1
+    return [motifs_input, files_list, window, motif_size]
+
 def CheckWindows(concatenated_window, window, cluster):
     while k in range((index - window), (index + window + 1)):
         curr_potential_motif1 = sequence1[k:k + motif_size]
@@ -437,11 +463,10 @@ def GenerateComplement(sequence):
 
     return complement
 
-def GenerateComplementsForAll(sequence):
+def GenerateComplements(sequence):
 
     complements = [""]
     i = len(sequence) - 1
-    print(sequence)
 
     while i < len(sequence) and i >= 0:
         h = 0
@@ -531,8 +556,6 @@ def GenerateComplementsForAll(sequence):
                 h += 2
         elif sequence[i] == "W":
             while h < len(complements):
-                print(len(complements))
-                print(h)
                 copy_seq = complements[h]
                 complements.insert((h), copy_seq)
                 complements[h] += "A"
@@ -553,21 +576,6 @@ def GenerateComplementsForAll(sequence):
         i -= 1
     return complements
 
-'''
-def GenerateVariations(sequence):
-    variations = []
-    i = len(sequence) - 1
-    slash_occurence = []
-    for j in len(sequence):
-        if "/" == sequence[j]:
-            slash_occurence.append(j)
-
-    slash_num = slash_occurence[0]
-    while i < len(sequence) and i >= 0:
-        if i = slash_num:
-            variations
-        i += 1
-'''
 def FindRandMotifs(sequence, motif_size):
 
     most_common_motifs = {}
@@ -576,7 +584,7 @@ def FindRandMotifs(sequence, motif_size):
 
     if type(sequence) is str:
         i = 0
-        print(sequence)
+        #print(sequence)
         while i <= (len(sequence) - motif_size) and len(sequence) > 3:
             curr_potential_motif1 = sequence[i:i + motif_size]
             n_occurence = 0
