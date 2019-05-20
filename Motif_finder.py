@@ -9,25 +9,16 @@ def main():
 
     motifs = input("Please input motifs you would like to check for, with a space in between each motif: ")
     motifs_dict1 = {}
-    motifs_with_n = []
+    motif_possibilities = {}
     motifs_generated = [] #list of all motifs generated from input motifs with n in them or variations (need to implement)
     start_site_dict = {}
     motifs_input = motifs.split()
     for motif in motifs_input:
-        if "N" in motif:
-            #if "/" not in motif:
-            motifs = GenerateNComplement(motif) #generate possible motifs replacing N for A,C,T,G
-            for i in range(4): #for every single motif motifs, generate the complement and add it to motifs
-                motifs_generated.append(motifs[i])
-                motifs_generated.append(GenerateComplement(motifs[i]))
-            #else:
+        motif_possibilities[motif] = GenerateComplementsForAll(motif)
+        motifs_dict1[motif] = {}
 
-            motifs_dict1[motif] = {}
-            motifs_with_n.append(motif)
+    print(motif_possibilities)
 
-        else:
-            complement = GenerateComplement(motif)
-            motifs_dict1[motif] = {}
 
 
     files = input("Please input the files you wish to search, with a space between each file path: ")
@@ -95,6 +86,7 @@ def main():
     motifs_found1 = []
     highlighted_sequences = {}
     index_motif = 0
+    keys = list(motif_possibilities.keys())
     for filename in files_dict:
         highlighted_sequences[filename] = {}
         for name in files_dict[filename]:
@@ -113,22 +105,11 @@ def main():
                                 n_occurence += 1
                         if n_occurence < 2:
                             complement = GenerateComplement(potential_motif1)
-                            if potential_motif1 in motifs_dict1:
-                                motifs_dict1[potential_motif1][filename][name].append(i)
-                            elif complement in motifs_dict1:
-                                motifs_dict1[complement][filename][name].append(i)
-                            else:
-                                try:
-                                    index_motif = motifs_generated.index(potential_motif1)
-                                    curr_motif = motifs_with_n[int(index_motif/8)]
-                                    motifs_dict1[curr_motif][filename][name].append(i)
-                                except ValueError:
-                                    try:
-                                        index_motif = motifs_generated.index(complement)
-                                        curr_motif = motifs_with_n[int(index_motif/8)]
-                                        motifs_dict1[curr_motif][filename][name].append(i)
-                                    except ValueError:
-                                        pass
+                            for k in range(len(motif_possibilities.keys())):
+                                if potential_motif1 in motif_possibilities[keys[k]] or complement in motif_possibilities[keys[k]]:
+                                    print(motifs_dict1[keys[k]][filename][name])
+                                    motifs_dict1[keys[k]][filename][name].append(i)
+
 
                     i -= 1
                     j -= 1
@@ -142,6 +123,24 @@ def main():
                         i -= 1
                     elif atgFound == True:
                         i = start_site
+                        """
+                        if potential_motif1 in motifs_dict1:
+                            motifs_dict1[potential_motif1][filename][name].append(i)
+                        elif complement in motifs_dict1:
+                            motifs_dict1[complement][filename][name].append(i)
+                        else:
+                            try:
+                                index_motif = motifs_generated.index(potential_motif1)
+                                #curr_motif = motifs_with_n[int(index_motif/8)]
+                                motifs_dict1[curr_motif][filename][name].append(i)
+                            except ValueError:
+                                try:
+                                    index_motif = motifs_generated.index(complement)
+                                    #curr_motif = motifs_with_n[int(index_motif/8)]
+                                    motifs_dict1[curr_motif][filename][name].append(i)
+                                except ValueError:
+                                    pass
+                                    """
 
     cluster = {}
     window_in_list = {}
@@ -164,10 +163,7 @@ def main():
                 concatenated_windows = ""
                 for index in motifs_dict1[motif][filename][name]:
                     downstream = start_site_dict[filename][name] - index
-                    #print("\t\t\t" + str(downstream) + " base pairs upstream of the start site," +
-                         # "\n\t\t\tthese are the following motifs within a " + str(window * 2) + " base pair window: ")
                     start = index
-                    k = start
                     curr_window = sequence1[start:(index + window + 1)]
                     if motif_index < (len(motif_list) - 1):
                         upstream = (motif_list[motif_index] - motif_list[motif_index + 1]) - 4
@@ -417,7 +413,7 @@ def GenerateComplement(sequence):
             complement += "A"
         elif sequence[i] == "N":
             complement += "N"
-        elif sequence[i] == "W"
+        elif sequence[i] == "W":
             complement += "W"
         elif sequence[i] == "S":
             complement += "S"
@@ -427,7 +423,7 @@ def GenerateComplement(sequence):
             complement += "M"
         elif sequence[i] == "R":
             complement += "Y"
-        elif sequence[i] == "Y"
+        elif sequence[i] == "Y":
             complement += "R"
         elif sequence[i] == "B":
             complement += "V"
@@ -441,107 +437,120 @@ def GenerateComplement(sequence):
 
     return complement
 
-def GenerateNComplement(sequence, complements):
-
-    while i < len(sequence) and i >= 0:
-        if sequence[i] == "A":
-            for i in len(complements):
-                complements[i] += "T"
-        elif sequence[i] == "G":
-            for i in len(complements):
-                complements[i] += "C"
-        elif sequence[i] == "C":
-            for i in len(complements):
-                complements[i] += "G"
-        elif sequence[i] == "T":
-            for i in len(complements):
-                complements[i] += "A"
-        elif sequence[i] == "N":
-            for i in len(complements):
-                complements[i] += "C"
-        i -= 1
-
-    return complements
-
-def GenerateWComplements(sequence):
-    complements = ["", "", "", ""]
-    i = len(sequence) - 1
-
-    while i < len(sequence) and i >= 0:
-        if sequence[i] == "A":
-            complements[0] += "T"
-            complements[1] += "T"
-            complements[2] += "T"
-            complements[3] += "T"
-
-        elif sequence[i] == "G":
-            complements[0] += "C"
-            complements[1] += "C"
-            complements[2] += "C"
-            complements[3] += "C"
-
-        elif sequence[i] == "C":
-            complements[0] += "G"
-            complements[1] += "G"
-            complements[2] += "G"
-            complements[3] += "G"
-
-        elif sequence[i] == "T":
-            complements[0] += "A"
-            complements[1] += "A"
-            complements[2] += "A"
-            complements[3] += "A"
-
-        elif sequence[i] == "W"
-            complements[0] += "A"
-            complements[1] += "T"
-            complements[2] += "C"
-            complements[3] += "G"
-
-        i -= 1
-
-    return complements
-#USE a dictionary to store all variations/possibilities of motifs that contain N or / in them and when searching in the sequence simply use that motif as the key for the dictionary and compare whether current motif is in the values.
-
 def GenerateComplementsForAll(sequence):
 
-    complements = {}
+    complements = [""]
     i = len(sequence) - 1
-    n_occurence = 0
+    print(sequence)
 
     while i < len(sequence) and i >= 0:
+        h = 0
+        print(sequence[i])
         if sequence[i] == "A":
-            complements[0][i] += "T"
-            complements[1][i] += "T"
-            complements[2][i] += "T"
-            complements[3][i] += "T"
-
+            for j in range(len(complements)):
+                complements[j] += "T"
         elif sequence[i] == "G":
-            complements[0][i] += "C"
-            complements[1][i] += "C"
-            complements[2][i] += "C"
-            complements[3][i] += "C"
-
+            for k in range(len(complements)):
+                complements[k] += "C"
         elif sequence[i] == "C":
-            complements[0][i] += "G"
-            complements[1][i] += "G"
-            complements[2][i] += "G"
-            complements[3][i] += "G"
-
+            for m in range(len(complements)):
+                complements[m] += "G"
         elif sequence[i] == "T":
-            complements[0][i] += "A"
-            complements[1][i] += "A"
-            complements[2][i] += "A"
-            complements[3][i] += "A"
-
-        elif sequence[i] == "N"
-            complements[0][i] += "A"
-            complements[1][i] += "T"
-            complements[2][i] += "C"
-            complements[3][i] += "G"
-
+            for p in range(len(complements)):
+                complements[p] += "A"
+        elif sequence[i] == "V":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements[h] += "G"
+                complements[h + 1] += "T"
+                complements[h + 2] += "C"
+                h += 3
+        elif sequence[i] == "H":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "T"
+                complements[h + 2] += "C"
+                h += 3
+        elif sequence[i] == "D":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "T"
+                complements[h + 2] += "G"
+                h += 3
+        elif sequence[i] == "B":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "C"
+                complements[h + 2] += "G"
+                h += 3
+        elif sequence[i] == "Y":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "G"
+                h += 2
+        elif sequence[i] == "R":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "C"
+                complements[h + 1] += "T"
+                h += 2
+        elif sequence[i] == "K":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "C"
+                h += 2
+        elif sequence[i] == "M":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "G"
+                complements[h + 1] += "T"
+                h += 2
+        elif sequence[i] == "S":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "C"
+                complements[h + 1] += "G"
+                h += 2
+        elif sequence[i] == "W":
+            while h < len(complements):
+                print(len(complements))
+                print(h)
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "T"
+                h += 2
+        elif sequence[i] == "N":
+            while h < len(complements):
+                copy_seq = complements[h]
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements.insert((h), copy_seq)
+                complements[h] += "A"
+                complements[h + 1] += "T"
+                complements[h + 2] += "C"
+                complements[h + 3] += "G"
+                h += 4
+                #REMOVE FOR LOOPS
         i -= 1
-
     return complements
 
 '''
