@@ -31,6 +31,7 @@ def main():
         file = open(filename, "r")
         sequence_as_list = file.readlines()
         '''
+        This was code to write out to a word document, but I ended up scrapping it, however, the code to write out to it was difficult to write so i just commented it out in case I wanted to come back to it later
         num_times = 0
         p = new_file.add_paragraph()
         list_styles = new_file.styles
@@ -51,6 +52,7 @@ def main():
         '''
         alignment = ""
         i = 0
+        #parses sequences in every file
         while i < len(sequence_as_list):
             if len(sequence_as_list[i]) > 0 and sequence_as_list[i][0] != '>':
                 one_line += sequence_as_list[i].strip("\n")
@@ -68,18 +70,22 @@ def main():
 
         files_dict[filename] = sequences_dict
 
+    #initialize dictionaries
     for motif in motifs_dict1:
         for filename in files_dict:
             motifs_dict1[motif][filename] = {}
             start_site_dict[filename] = {}
             for sequence in files_dict[filename]:
+                #motifs_dict1 will contain index where motif occurs
                 motifs_dict1[motif][filename][sequence] = []
+                #start_site_dict contains the start site for every sequence in every file
                 start_site_dict[filename][sequence] = 0
 
     motifs_found1 = []
     highlighted_sequences = {}
     index_motif = 0
     keys = list(motif_possibilities.keys())
+    #find where each motif occurs in each sequence
     for filename in files_dict:
         highlighted_sequences[filename] = {}
         for name in files_dict[filename]:
@@ -93,19 +99,16 @@ def main():
                     if (i - 4) >= 0:
                         potential_motif1 = sequence1[i - 4:i]
                         n_occurence = 0
-                        for char in potential_motif1:
-                            if "N" == char:
-                                n_occurence += 1
-                        if n_occurence < 2:
-                            complement = GenerateComplement(potential_motif1)
-                            for k in range(len(motif_possibilities.keys())):
-                                if potential_motif1 in motif_possibilities[keys[k]] or complement in motif_possibilities[keys[k]]:
-                                    motifs_dict1[keys[k]][filename][name].append(i)
-
+                        complement = GenerateComplement(potential_motif1)
+                        for k in range(len(motif_possibilities.keys())):
+                            if potential_motif1 in motif_possibilities[keys[k]] or complement in motif_possibilities[keys[k]]:
+                                motifs_dict1[keys[k]][filename][name].append(i)
 
                     i -= 1
                     j -= 1
+
                 else:
+                    #find start site (assuming first ATG is start site)
                     potential_site = sequence1[(i - 2):(i + 1)]
                     if potential_site == "ATG" or potential_site == "CAT":
                         start_site = i - 2
@@ -127,6 +130,7 @@ def main():
             window_in_list[motif][filename] = {}
             print("\tIn file " + filename + ":")
             for name in files_dict[filename]:
+                #grab windows up and down stream of motif and concatenates them
                 print("\t\tIn sequence " + name.strip("\n") + ":")
                 cluster[motif][filename][name] = {}
                 window_in_list[motif][filename][name] = []
@@ -299,6 +303,7 @@ def main():
 
                 cluster[motif][filename][name] = concatenated_windows
                 if len(window_in_list[motif][filename][name]) > 0:
+                    #finds 10 most common motifs of a previously specified size
                     co_motifs = FindRandMotifs(concatenated_windows, motif_size)
                     co_motifs1 = FindRandMotifs(window_in_list[motif][filename][name], motif_size)
                     print("List ")
@@ -313,10 +318,8 @@ def main():
             sequences = FindSeqWithMotifs("GATA", 2, "GGAA", 1, files_dict[filename][name], 30, start_site_dict[filename][name])
             print(sequences)
 '''
-#change function names to proper format "def word_word_word"
 
-#gives index of co-motif occurences around a certain window of a motif
-
+#parses arguments given at program call
 def ParseArgs(inputs):
     i = 0
     motifs_input = []
@@ -328,30 +331,24 @@ def ParseArgs(inputs):
     motif_size = 4
     onSize = False
     while i < len(inputs):
+        onMotifs = False
+        onFiles = False
+        onWindow = False
+        onSize = False
         if inputs[i] == "-m":
             onMotifs = True
-            onFiles = False
-            onWindow = False
-            onSize = False
             i += 1
         elif inputs[i] == "-f":
-            onMotifs = False
             onFiles = True
-            onWindow = False
-            onSize = False
             i += 1
         elif inputs[i] == "-ws":
-            onMotifs = False
-            onFiles = False
             onWindow = True
-            onSize = False
             i += 1
         elif inputs[i] == "-ms":
-            onMotifs = False
-            onFiles = False
-            onWindow = False
             onSize = True
             i += 1
+        elif inputs[i] == "-help":
+            print("Hello, there are 4 parameters available to you: known motifs (should be preceded by -M), files (please input full path and precede by -f), window size to search around motifs (-ws), and size which you want co-motifs to be (-ms).")
 
         if onMotifs == True:
             motifs_input.append(inputs[i])
