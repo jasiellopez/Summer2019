@@ -1,7 +1,3 @@
-import docx
-from docx import Document
-from docx.enum.text import WD_COLOR_INDEX
-from docx.enum.style import WD_STYLE_TYPE
 import sys
 import operator
 import collections
@@ -94,8 +90,8 @@ def main():
             atgFound = False
             while i in range(len(sequence1)):
                 if atgFound == True:
-                    if (i - motif_size) >= 0:
-                        potential_motif1 = sequence1[i - motif_size:i]
+                    if (i - 4) >= 0:
+                        potential_motif1 = sequence1[i - 4:i]
                         n_occurence = 0
                         for char in potential_motif1:
                             if "N" == char:
@@ -151,18 +147,14 @@ def main():
                     #prevents first window from overlapping start site and also prevents overlap in upstream
                     if upstream >= (2*window) and downstream >= window and motif_index == 0: #done
                         curr_window = sequence1[start - window - 4:start - 4] + sequence1[start:start + window]
-                        #print(curr_window)
                         concatenated_windows += curr_window
                         window_in_list[motif][filename][name].append(curr_window)
-                        #CheckWindows(concatenated_windows, window, cluster)
 
                     elif upstream >= (2*window) and downstream < window and motif_index == 0:
                         #done
                         curr_window = sequence1[start - window - 4:start - 4] + sequence1[start:start + downstream]
-                        #print(curr_window)
                         concatenated_windows += curr_window
                         window_in_list[motif][filename][name].append(curr_window)
-                        #CheckWindows(concatenated_windows, window, cluster)
 
                     elif upstream < (2*window) and downstream >= window and motif_index == 0:
                         #done
@@ -176,8 +168,6 @@ def main():
                                 else:
                                     beg_of_upstream_window = start - window - 4
                             curr_window = sequence1[beg_of_upstream_window:start - 4] + sequence1[start:start + window]
-                            #CheckWindows(concatenated_windows, window, cluster)
-                            #((motif_list[motif_index] - motif_list[motif_index + 1])) gives a positive value since the indexes are stored from the end of the string to the beginning
 
                         else:
                             if motif_index < (len(motif_list) - 1):
@@ -191,7 +181,6 @@ def main():
 
                         concatenated_windows += curr_window
                         window_in_list[motif][filename][name].append(curr_window)
-                            #CheckWindows(concatenated_windows, window, cluster)
 
                     elif upstream < (2*window) and downstream < window and motif_index == 0:
                         #done
@@ -206,7 +195,6 @@ def main():
                                     beg_of_upstream_window = start - window - 4
 
                             curr_window = sequence1[beg_of_upstream_window:start - 4] + sequence1[start:start + downstream]
-                            #CheckWindows(concatenated_windows, window, cluster)
                         else:
                             if motif_index < (len(motif_list) - 1):
                                 curr_window = sequence1[start:start + downstream]
@@ -218,9 +206,7 @@ def main():
                                 curr_window = sequence1[beg_of_upstream_window:start - 4] + sequence1[start:start + downstream]
 
                         concatenated_windows += curr_window
-                        #print(curr_window)
                         window_in_list[motif][filename][name].append(curr_window)
-                        #CheckWindows(concatenated_windows, window, cluster)
 
                     if motif_index > 0:
                         #if both windows are large enough to allow for normal window
@@ -237,8 +223,6 @@ def main():
                         #done
                             if not1st_downstream >= window:
                                 curr_window = sequence1[start - window - 4:start - 4] + sequence1[start:start + window]
-                                #CheckWindows(concatenated_windows, window, cluster)
-                                #((motif_list[motif_index] - motif_list[motif_index - 1])) gives a positive value since the indexes are stored from the end of the string to the beginning
 
                             else:
                                 if not1st_downstream > 0:
@@ -284,9 +268,7 @@ def main():
 
                             curr_window = sequence1[beg_of_upstream_window:start - 4] + sequence1[start:end_of_downstream_window]
                             concatenated_windows += curr_window
-                            #print(curr_window)
                             window_in_list[motif][filename][name].append(curr_window)
-                            #CheckWindows(concatenated_windows, window, cluster)
 
                         #if window downstream is large enough to allow for a normal window to be taken but window upstream will lead to overlap unless adjusted
                         elif upstream < (2*window) and not1st_downstream >= (2*window):
@@ -301,8 +283,6 @@ def main():
                                         beg_of_upstream_window = start - window - 4
 
                                 curr_window = sequence1[beg_of_upstream_window:start - 4] + sequence1[start:start + window]
-                                #CheckWindows(concatenated_windows, window, cluster)
-                                #((motif_list[motif_index] - motif_list[motif_index - 1])) gives a positive value since the indexes are stored from the end of the string to the beginning
 
                             else:
                                 if motif_index < (len(motif_list) - 1):
@@ -313,20 +293,13 @@ def main():
                                     else:
                                         curr_window = sequence1[start - window - 4:start - 4] + sequence1[start:start + window]
                             concatenated_windows += curr_window
-                            #print(curr_window)
                             window_in_list[motif][filename][name].append(curr_window)
-                                #CheckWindows(concatenated_windows, window, cluster)
 
                     motif_index += 1
 
-                    #for co_motif in cluster[motif][filename][name][index]:
-                        #print("\t\t\t\t" + co_motif + " following distances (negative represent upstream):")
-                        #print("\t\t\t\t\t" + str(cluster[motif][filename][name][index][co_motif]))
                 cluster[motif][filename][name] = concatenated_windows
                 if len(window_in_list[motif][filename][name]) > 0:
                     co_motifs = FindRandMotifs(concatenated_windows, motif_size)
-                    #print(filename)
-                    #print(name)
                     co_motifs1 = FindRandMotifs(window_in_list[motif][filename][name], motif_size)
                     print("List ")
                     for key in co_motifs1:
@@ -392,6 +365,7 @@ def ParseArgs(inputs):
         i += 1
     return [motifs_input, files_list, window, motif_size]
 
+#have not changed to be used as a independent function
 def CheckWindows(concatenated_window, window, cluster):
     while k in range((index - window), (index + window + 1)):
         curr_potential_motif1 = sequence1[k:k + motif_size]
@@ -404,6 +378,7 @@ def CheckWindows(concatenated_window, window, cluster):
             cluster[motif][filename][name][index][curr_potential_motif1] = [(index - k)]
         k += 1
 
+#have not changed to be used as a independent function
 def PrintHighlighted(motifs_dict1):
 
     for motif in motifs_dict1:
@@ -672,170 +647,6 @@ def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_t
     return list_sequences
 
 main()
-
-'''
-THIS IS SUPPOSED TO HIGHLIGHT ALL THE MOTIFS BUT IT ISN'T FIGURE IT OUT
-    for filename in files_dict:
-        for sequence in files_dict[filename]:
-            highlighted_sequence = ""
-            for motif in motifs_dict1:
-                unhighlighted = files_dict[filename][sequence].split(motif)
-                highlighted1 = "\033[1;33m"+motif+"\033[3;37m"
-                for j in range(len(unhighlighted)):
-                    if j != (len(highlighted1) - 1):
-                        highlighted_sequence += unhighlighted[j] + highlighted1
-                    else:
-                        highlighted_sequence += unhighlighted[j]
-                highlighted_sequences[filename][name] = highlighted_sequence
-                print(files_dict[filename][sequence])
-'''
-
-
-
-    #print("\n")
-    #print(cluster)
-    #concatenate all windows and search for enrichment in them
-    #clustering: getting a sequence with n amount of one motif and m amount of other co-motif within x amount of base pairs
-    #secomod script
-    #use neural genes to test algorithm (test for gata and ets site)
-    #look up nucleosome finding script
-
-'''paragraphs = []
-    #TODO: DO OTHER STUFF
-    #inserts a -1 when a new alignment sequence is starteds
-    for motif in motifs_found1:
-        motifs_dict1[motif].append(-1)
-    for motif in motifs_found2:
-        motifs_dict2[motif].append(-1)
-    motifs_found1 = []
-    motifs_found2 = []
-    for key in motifs_dict1:
-
-correction = 0
-for i in range(0, (len(sequence1)//60)):
-    print((len(sequence1)//60))
-    print("IN IF STATEMENT")
-    print(i)
-    print(len(sequences_dict[key][0]))
-    corrected_i = (i*60) + correction
-    print(corrected_i)
-    pre_new_line = len(sequences_dict[key][0])
-    print(sequences_dict[key][0][:50])
-    print(sequences_dict[key][0][:5motif_size])
-    print(sequences_dict[key][0][:58])
-    print(sequences_dict[key][0][:62])
-    sequences_dict[key][0] = sequences_dict[key][0][:corrected_i] + "\n" + sequences_dict[key][0][corrected_i:]
-    print(len(sequences_dict[key][0]))
-    print(sequences_dict[key][0][:corrected_i])
-'''
-'''print(sequences_dict[key][1])
-    sequences_dict[key][1] = sequences_dict[key][1][:corrected_i] + "\n" + sequences_dict[key][1][corrected_i:]
-    print("\n")
-    print(sequences_dict[key][1])
-
-'''
-        #correction = len(sequences_dict[key][0]) - pre_new_line
-
-#add two lines at a time in a run (current line and alignment)
-
-#find distance between 2 motifs
-#identify if there is a section of N bp where a certain amount of motifs appear
-
-
-
-#consult andrew
-#find overrpresentation close to an identified ETS site
-
-#ask joe whether we shouldve been done with specs we ran
-
-
-
-
-
-
-
-
-
-
-
-
-'''import docx
-
-def main():
-
-    motifs = input("Please input motifs you would like to check for, with a space in between each motif")
-    motifs_dict = {}
-    motifs_list = motifs.split()
-    for motif in motifs_list:
-        motifs_dict[motif] = []
-
-    files = input("Please input the files you wish to search, with a space between each file path")
-    files_list = []
-    files_list = files.split()
-    sequences_dict = {}
-
-    for filename in files_list:
-        file = open(filename, "r")
-        sequence = file.readlines()
-        one_line = ""
-        alignment = ""
-        i = 0
-        while i < len(sequence):
-            if len(sequence[i]) > 0 and sequence[i][0] != '>':
-                one_line += sequence[i].strip("\n")
-                alignment += sequence[i + 1].strip("\n")
-                if len(sequence[i]) < 60:
-                    sequences_dict[sequences_name] = [one_line, alignment]
-                i += 3
-            if i < len(sequence):
-                if sequence[i][0] == '>':
-                    sequences_name = sequence[i]
-                    i += 2
-    print(sequences_dict)
-
-    newfiles_list = []
-    for i in len(sequences_dict):
-        for
-        #/Users/jasiel/Downloads/Molgulid.mesp.alignments.edited_highlighted_motifs.docx
-        new_filename = files_list[i] + "_highlighted_motifs.docx"
-        new_file = docx.Document(new_filename)
-        remainder = 0
-        curr_line = 0
-        #denotes whether previous line was divisible by motif_size
-        previous_line = False
-        for line in file:
-            if ((len(line) + remainder) % motif_size != 0):
-                remainder = len(line) % motif_size
-                for j in range(len(line)):
-                    if j <= len(line) - remainder - 1:
-
-                        potential_motif = line[j:j + motif_size]
-                        #potential_motif =
-                        if potential_motif in motifs_dict:
-                            found_motif_index = j;
-                            motifs_dict[potential_motif].append(found_motif_index)
-                            #highlighttext
-                            #increment occurence amount
-                    if j > len(line) - remainder - 1:
-                        sequence_remainder = line[j:]
-                previous_line = True
-            else:
-                for j in range(len(line)):
-                    potential_motif = line[j:j + motif_size]
-                    if potential_motif in motifs_dict:
-                        found_motif_index = j;
-                        motifs_dict[potential_motif].append(found_motif_index)
-                        #highlighttext
-                        #increment occurence amount
-                previous_line = False
-            curr_line += 1
-
-    print (motifs_dict)
-#find distance between 2 motifs
-'''
-
-
-
 
 '''
 >>CI-OTX 60
