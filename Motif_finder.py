@@ -67,6 +67,7 @@ def main():
                 one_line = ""
                 i += 2
             if i == (len(sequence_as_list) - 1):
+                one_line += sequence_as_list[i].strip("\n")
                 sequences_dict[sequences_name] = one_line
 
         files_dict[filename] = sequences_dict
@@ -470,7 +471,6 @@ def GenerateComplements(sequence):
 
     while i < len(sequence) and i >= 0:
         h = 0
-        print(sequence[i])
         if sequence[i] == "A":
             for j in range(len(complements)):
                 complements[j] += "T"
@@ -584,7 +584,7 @@ def FindRandMotifs(sequence, motif_size):
 
     if type(sequence) is str:
         i = 0
-        #print(sequence)
+        print(sequence)
         while i <= (len(sequence) - motif_size) and len(sequence) > 3:
             curr_potential_motif1 = sequence[i:i + motif_size]
             n_occurence = 0
