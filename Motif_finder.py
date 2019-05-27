@@ -69,6 +69,7 @@ def main():
                 sequences_dict[sequences_name] = one_line
 
         files_dict[filename] = sequences_dict
+        sequences_dict = {}
 
     #initialize dictionaries
     for motif in motifs_dict1:
@@ -147,15 +148,19 @@ def main():
                     not1st_downstream = (motif_list[motif_index - 1] - motif_list[motif_index]) - curr_motif_size
                     #prevents first window from overlapping start site and also prevents overlap in upstream
                     if upstream >= (2*window) and downstream >= window and motif_index == 0: #done
-                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
-                        concatenated_windows += curr_window
+                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                        curr_window1 = sequence1[start:start + window]
+                        concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
+                        window_in_list[motif][filename][name].append(curr_window1)
 
                     elif upstream >= (2*window) and downstream < window and motif_index == 0:
                         #done
-                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + downstream]
-                        concatenated_windows += curr_window
+                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                        curr_window1 = sequence1[start:start + downstream]
+                        concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
+                        window_in_list[motif][filename][name].append(curr_window1)
 
                     elif upstream < (2*window) and downstream >= window and motif_index == 0:
                         #done
@@ -168,7 +173,8 @@ def main():
                                     beg_of_upstream_window = 0
                                 else:
                                     beg_of_upstream_window = start - window - curr_motif_size
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:start + window]
+                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + window]
 
                         else:
                             if motif_index < (len(motif_list) - 1):
@@ -178,10 +184,12 @@ def main():
                                     beg_of_upstream_window = 0
                                 else:
                                     beg_of_upstream_window = start - window - curr_motif_size
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:start + window]
+                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + window]
 
-                        concatenated_windows += curr_window
+                        concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
+                        window_in_list[motif][filename][name].append(curr_window1)
 
                     elif upstream < (2*window) and downstream < window and motif_index == 0:
                         #done
@@ -195,7 +203,11 @@ def main():
                                 else:
                                     beg_of_upstream_window = start - window - curr_motif_size
 
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:start + downstream]
+                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + downstream]
+                            concatenated_windows += curr_window + curr_window1
+                            window_in_list[motif][filename][name].append(curr_window)
+                            window_in_list[motif][filename][name].append(curr_window1)
                         else:
                             if motif_index < (len(motif_list) - 1):
                                 curr_window = sequence1[start:start + downstream]
@@ -204,20 +216,22 @@ def main():
                                     beg_of_upstream_window = 0
                                 else:
                                     beg_of_upstream_window = start - window - curr_motif_size
-                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:start + downstream]
+                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                                curr_window1 = sequence1[start:start + downstream]
 
-                        concatenated_windows += curr_window
+                        concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
+                        window_in_list[motif][filename][name].append(curr_window1)
 
                     if motif_index > 0:
                         #if both windows are large enough to allow for normal window
                         if upstream >= (2*window) and not1st_downstream >= (2*window):
                             #done
-                            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
-                            concatenated_windows += curr_window
-                            #print(curr_window)
+                            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + window]
+                            concatenated_windows += curr_window + curr_window1
                             window_in_list[motif][filename][name].append(curr_window)
-                            #CheckWindows(concatenated_windows, window, cluster)
+                            window_in_list[motif][filename][name].append(curr_window1)
 
                         #if window upstream is large enough to allow for a normal window to be taken but window downstream will lead to overlap unless adjusted
                         elif upstream >= (2*window) and not1st_downstream < (2*window):
@@ -227,14 +241,14 @@ def main():
 
                             else:
                                 if not1st_downstream > 0:
-                                    curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + not1st_downstream]
+                                    curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                                    curr_window1 = sequence1[start:start + not1st_downstream]
                                 else:
                                     curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-
-                            concatenated_windows += curr_window
-                            #print(curr_window)
+                                    curr_window1 = ""
+                            concatenated_windows += curr_window + curr_window1
                             window_in_list[motif][filename][name].append(curr_window)
-                            #CheckWindows(concatenated_windows, window, cluster)
+                            window_in_list[motif][filename][name].append(curr_window1)
 
                         #if both windows up and downstream will lead to overlap unless adjusted
                         elif upstream < (2*window) and not1st_downstream < (2*window):
@@ -267,9 +281,11 @@ def main():
                                     else:
                                         beg_of_upstream_window = start - window - curr_motif_size
 
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:end_of_downstream_window]
-                            concatenated_windows += curr_window
+                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                            curr_window1 = sequence1[start:end_of_downstream_window]
+                            concatenated_windows += curr_window + curr_window1
                             window_in_list[motif][filename][name].append(curr_window)
+                            window_in_list[motif][filename][name].append(curr_window1)
 
                         #if window downstream is large enough to allow for a normal window to be taken but window upstream will lead to overlap unless adjusted
                         elif upstream < (2*window) and not1st_downstream >= (2*window):
@@ -283,18 +299,23 @@ def main():
                                     else:
                                         beg_of_upstream_window = start - window - curr_motif_size
 
-                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size] + sequence1[start:start + window]
+                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                                curr_window1 = sequence1[start:start + window]
 
                             else:
                                 if motif_index < (len(motif_list) - 1):
                                     curr_window = sequence1[start:start + window]
+                                    curr_window1 = ""
                                 else:
                                     if (start - curr_motif_size - window) < 0:
-                                        curr_window = sequence1[0:start - curr_motif_size] + sequence1[start:start + window]
+                                        curr_window = sequence1[0:start - curr_motif_size]
+                                        curr_window1 = sequence1[start:start + window]
                                     else:
-                                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
-                            concatenated_windows += curr_window
+                                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                                        curr_window1 = sequence1[start:start + window]
+                            concatenated_windows += curr_window + curr_window1
                             window_in_list[motif][filename][name].append(curr_window)
+                            window_in_list[motif][filename][name].append(curr_window1)
 
                     motif_index += 1
 
@@ -328,24 +349,33 @@ def ParseArgs(inputs):
     motif_size = 4
     onSize = False
     while i < len(inputs):
-        onMotifs = False
-        onFiles = False
-        onWindow = False
-        onSize = False
+
         if inputs[i] == "-m":
             onMotifs = True
+            onFiles = False
+            onWindow = False
+            onSize = False
             i += 1
         elif inputs[i] == "-f":
+            onMotifs = False
             onFiles = True
+            onWindow = False
+            onSize = False
             i += 1
         elif inputs[i] == "-ws":
+            onMotifs = False
+            onFiles = False
             onWindow = True
+            onSize = False
             i += 1
         elif inputs[i] == "-ms":
+            onMotifs = False
+            onFiles = False
+            onWindow = False
             onSize = True
             i += 1
         elif inputs[i] == "-help":
-            print("Hello, there are 4 parameters available to you: known motifs (should be preceded by -M), files (please input full path and precede by -f), window size to search around motifs (-ws), and size which you want co-motifs to be (-ms).")
+            print("Hello, there are 4 parameters available to you: known motifs (should be preceded by -m), files (please input full path and precede by -f), window size to search around motifs (-ws), and size which you want co-motifs to be (-ms).")
 
         if onMotifs == True:
             motifs_input.append(inputs[i])
@@ -584,9 +614,7 @@ def FindRandMotifs(sequence, motif_size):
             declared = False
             if len(window) > 3:
                 sequence1 = window
-                #print(window)
                 i = 0
-                #print(len(sequence1) - motif_size)
                 while i <= (len(sequence1) - motif_size):
                     curr_potential_motif1 = sequence1[i:i + motif_size]
                     #print(curr_potential_motif1)
