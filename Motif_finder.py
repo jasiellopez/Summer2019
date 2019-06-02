@@ -646,7 +646,7 @@ def FindRandMotifs(sequence, motif_size):
     return most_common_motifs
 
 
-def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_to_search, start_site, motif_size):
+def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_to_search, start_site, motif_size, motif_possibilities):
 
     #list of sequences that fit the criteria
     list_sequences = []
@@ -659,9 +659,9 @@ def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_t
             num_occurrences2 = 0
             for j in range(len(window) - 3):
                 potential_occurence = window[j:j + motif_size]
-                if potential_occurence == motif1 or GenerateComplement(potential_occurence) == motif1:
+                if potential_occurence in motif_possibilities[motif1] or GenerateComplement(potential_occurence) in motif_possibilities[motif1]:
                     num_occurrences1 += 1
-                elif potential_occurence == motif2 or GenerateComplement(potential_occurence) == motif2:
+                elif potential_occurence in motif_possibilities[motif2] or GenerateComplement(potential_occurence) in motif_possibilities[motif2]:
                     num_occurrences2 += 1
             if num_occurrences1 == num_motif1 and num_occurrences2 == num_motif2:
                 list_sequences.append(sequence[i:i + window_to_search])
