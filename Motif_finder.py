@@ -3,7 +3,9 @@ import operator
 import collections
 
 def main():
-
+    #the goal of this script is to identify the most commonly-occurring DNA sequences (motifs) 
+    #within a certain range (given in terms of base pairs) of a known co-motif (also given)
+    #
     inputs = ParseArgs(sys.argv)
     motifs_input = inputs[0]
     files_list = inputs[1]
@@ -12,7 +14,7 @@ def main():
 
     motifs_dict1 = {}
     motif_possibilities = {}
-    motifs_generated = [] #list of all motifs generated from input motifs with n in them or variations (need to implement)
+    motifs_generated = []
     start_site_dict = {}
     for motif in motifs_input:
         motif_possibilities[motif] = GenerateComplements(motif)
@@ -23,11 +25,6 @@ def main():
 
     newfiles_list = []
     for filename in files_list:
-        #/Users/jasiel/Desktop/Molgulid.mesp.alignments.edited_highlighted_motifs.docx
-        #new_filename = filename + "_highlighted_motifs.docx"
-        #new_file = docx.Document()
-        #new_file.save(new_filename)
-        #newfiles_list.append(new_file)
         file = open(filename, "r")
         sequence_as_list = file.readlines()
         '''
@@ -52,7 +49,8 @@ def main():
         '''
         alignment = ""
         i = 0
-        #parses sequences in every file
+        #parses sequences in every file. Adds the name as the key in dictionary 
+        #"sequences_dict" and value is the sequence
         while i < len(sequence_as_list):
             if len(sequence_as_list[i]) > 0 and sequence_as_list[i][0] != '>':
                 one_line += sequence_as_list[i].strip("\n")
@@ -81,9 +79,7 @@ def main():
                 motifs_dict1[motif][filename][sequence] = []
                 #start_site_dict contains the start site for every sequence in every file
                 start_site_dict[filename][sequence] = 0
-
-    motifs_found1 = []
-    index_motif = 0
+                
     keys = list(motif_possibilities.keys())
     #find where each motif occurs in each sequence
     for filename in files_dict:
@@ -105,7 +101,7 @@ def main():
                         j -= 1
 
                     else:
-                        #find start site (assuming first ATG is start site)
+                        #find start site (assuming first ATG is start site and that DNA is 5'-3')
                         potential_site = sequence1[(i - 2):(i + 1)]
                         if potential_site == "ATG" or potential_site == "CAT":
                             start_site = i - 2
@@ -115,7 +111,10 @@ def main():
                             i -= 1
                         elif atgFound == True:
                             i = start_site
-
+    #this entire loop creates a sequence which contains the 
+    #sequence n base pairs up and downstream of a known "motif" occurrence
+    #overlap is accounted for and if this occurs, the algorithm pulls less 
+    #than "window" base pairs
     cluster = {}
     window_in_list = {}
     for motif in motifs_dict1:
@@ -147,23 +146,21 @@ def main():
                         upstream = index - curr_motif_size
                     not1st_downstream = (motif_list[motif_index - 1] - motif_list[motif_index]) - curr_motif_size
                     #prevents first window from overlapping start site and also prevents overlap in upstream
-                    if upstream >= (2*window) and downstream >= window and motif_index == 0: #done
+                    if upstream >= (2*window) and downstream >= window and motif_index == 0:
                         curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
                         curr_window1 = sequence1[start:start + window]
                         concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
                         window_in_list[motif][filename][name].append(curr_window1)
-
+                    #accounts for smaller than "window" sequence size downstream
                     elif upstream >= (2*window) and downstream < window and motif_index == 0:
-                        #done
                         curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
                         curr_window1 = sequence1[start:start + downstream]
                         concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
                         window_in_list[motif][filename][name].append(curr_window1)
-
+                    #accounts for smaller than "window" sequence size upstream
                     elif upstream < (2*window) and downstream >= window and motif_index == 0:
-                        #done
                         if upstream > window:
                             beg_of_upstream_window = 0
                             if motif_index < (len(motif_list) - 1):
@@ -190,9 +187,8 @@ def main():
                         concatenated_windows += curr_window + curr_window1
                         window_in_list[motif][filename][name].append(curr_window)
                         window_in_list[motif][filename][name].append(curr_window1)
-
+                    #accounts for case when both up and downstream sequences are less than n base pairs
                     elif upstream < (2*window) and downstream < window and motif_index == 0:
-                        #done
                         if upstream > window:
                             if motif_index < (len(motif_list) - 1):
                                 beg_of_upstream_window = start - curr_motif_size - (upstream - window)
@@ -226,7 +222,6 @@ def main():
                     if motif_index > 0:
                         #if both windows are large enough to allow for normal window
                         if upstream >= (2*window) and not1st_downstream >= (2*window):
-                            #done
                             curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
                             curr_window1 = sequence1[start:start + window]
                             concatenated_windows += curr_window + curr_window1
@@ -235,7 +230,6 @@ def main():
 
                         #if window upstream is large enough to allow for a normal window to be taken but window downstream will lead to overlap unless adjusted
                         elif upstream >= (2*window) and not1st_downstream < (2*window):
-                        #done
                             if not1st_downstream >= window:
                                 curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
 
@@ -252,7 +246,6 @@ def main():
 
                         #if both windows up and downstream will lead to overlap unless adjusted
                         elif upstream < (2*window) and not1st_downstream < (2*window):
-                            #done
                             if not1st_downstream >= window:
                                 end_of_downstream_window = start + window
 
@@ -289,7 +282,6 @@ def main():
 
                         #if window downstream is large enough to allow for a normal window to be taken but window upstream will lead to overlap unless adjusted
                         elif upstream < (2*window) and not1st_downstream >= (2*window):
-                            #done
                             if upstream > window:
                                 if motif_index < (len(motif_list) - 1):
                                     beg_of_upstream_window = start - curr_motif_size - (upstream - window)
@@ -321,7 +313,8 @@ def main():
 
                 cluster[motif][filename][name] = concatenated_windows
                 if len(window_in_list[motif][filename][name]) > 0:
-                    #finds 10 most common motifs of a previously specified size
+                    #finds 10 most common motifs of a previously specified size, one using a string 
+                    #and another using a list (in order to see how many accidental motifs were found in string case)
                     co_motifs = FindRandMotifs(concatenated_windows, motif_size)
                     co_motifs1 = FindRandMotifs(window_in_list[motif][filename][name], motif_size)
                     print("List ")
@@ -330,12 +323,6 @@ def main():
                     print("\nString ")
                     for key in co_motifs:
                         print(str(key) + ": " + str(co_motifs[key]))
-'''
-    for filename in files_dict:
-        for name in files_dict[filename]:
-            sequences = FindSeqWithMotifs("GATA", 2, "GGAA", 1, files_dict[filename][name], 30, start_site_dict[filename][name])
-            print(sequences)
-'''
 
 #parses arguments given at program call
 def ParseArgs(inputs):
@@ -389,7 +376,7 @@ def ParseArgs(inputs):
         i += 1
     return [motifs_input, files_list, window, motif_size]
 
-#have not changed to be used as a independent function
+#have not changed to be used as an independent function
 def CheckWindows(concatenated_window, window, cluster):
     while k in range((index - window), (index + window + 1)):
         curr_potential_motif1 = sequence1[k:k + motif_size]
@@ -402,7 +389,8 @@ def CheckWindows(concatenated_window, window, cluster):
             cluster[motif][filename][name][index][curr_potential_motif1] = [(index - k)]
         k += 1
 
-#have not changed to be used as a independent function
+#have not changed to be used as an independent function, 
+#it is an algorithm to print out found sequence with highlighted motifs to terminal
 def PrintHighlighted(motifs_dict1):
 
     for motif in motifs_dict1:
@@ -423,6 +411,7 @@ def PrintHighlighted(motifs_dict1):
 
     return sequence
 
+#create complement strand of sequence given
 def GenerateComplement(sequence):
 
     complement = ""
@@ -463,6 +452,7 @@ def GenerateComplement(sequence):
 
     return complement
 
+#converts the non-ATGC characters to ATGC based on universal DNA code
 def GenerateComplements(sequence):
 
     complements = [""]
@@ -571,10 +561,11 @@ def GenerateComplements(sequence):
                 complements[h + 2] += "C"
                 complements[h + 3] += "G"
                 h += 4
-                #REMOVE FOR LOOPS
         i -= 1
     return complements
 
+#finds motif candidates of "motif_size" in sequence given to function and 
+#return 10 most common motifs found
 def FindRandMotifs(sequence, motif_size):
 
     most_common_motifs = {}
@@ -645,7 +636,8 @@ def FindRandMotifs(sequence, motif_size):
 
     return most_common_motifs
 
-
+#finds sequences of DNA of size "window_to_search" which contain a "num_motif1" amount of 
+#"motif1" occurrences and a "num_motif2" amount of "motif2" occurences
 def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_to_search, start_site, motif_size, motif_possibilities):
 
     #list of sequences that fit the criteria
@@ -669,122 +661,3 @@ def FindSeqWithMotifs(motif1, num_motif1, motif2, num_motif2, sequence, window_t
     return list_sequences
 
 main()
-
-'''
->>CI-OTX 60
-
-CGTTATCTCTAACGGAAGTTTTCGAAAAGGAAATTGTTCAATATCTAAGATAGGAATG
-
->>Co-Otx 60
-
-CCGGTAATTACTCCATCAACAATAATTCAAGTTCATCTCAATTGAGGTAAGGAAAAACT
-TCAATTTCTTAATTGAACAAATTTATTTAAAATCTAAATTGTTTATCAAGACGAGATGT
-TTACTCTTTCGGTACACATTTATATTATAAACAAATTCCCCTTATGTTATGGGAACTAA
-TATTCGAAGGCGTCTGGTCATTTATAGCAAGTAAAAAATACGTAAATAAATAAACAAAA
-TACGAAGCCCGGAATAATAACATGCGATGAATGTATTCGGGTTTTGCTATTGTGTTACG
-TAAAGAGCGCATTTTTTGTGTCAATAAATATTCTGCATTAGAATAAACGACAAAGCTAT
-TGCACCATGGGAAAACTGCGTAGTAGGATTTCTTTTGGACAACGTAATAAGTTTGCGCA
-ATTTTTCTTACAATTTGCAGCTCTAAAATATTTATAAAGACGGATATGAATTTAAAAAT
-GATTTAAATTTATGAATTAATATATGGAATTAAGTTATTTCTAATAGATCATTTTCGGT
-TGATAATATAATTCATATGAATTATTATATTAAATTTAGTTATAGTTAATAGATCATTT
-TAGGATTTATAAATTAGTCTTAGCCATAAAAATATTCAGAAAATAATATTTGACCGCTG
-GTCGCTCACGCATCACGTGATCACCATCCTGTTTAAATTATTGGACAAGATTCGTTTAA
-GTTTACATAGGGTTCCTTGGTAGAGGATTAACTTTATTAATCCCTATAATTACCTTTGA
-TTTCATTCGAATGTCGACCATTGTTCGGAAGCCAAGCAGAATGTTAACCAACGAAATCA
-AAACCGTATTTTGACGCGTGTACTAATGCATAATTTGTCCATTGTGCTGCTTTATTTGC
-TTTGGAGCCCAGAAAACGTGCACCGGTTTTTGCAGGCAGTAATTAGTCGCCGAAACAAA
-AGTTCTAAAGTTCGTTTTCCGCACTCTTATAAACTACCTTGCAGCGCGCACATGTATGT
-AATGAGGACAGCCGGTTATAACAATGCATCGGCAAGGTGCCGTATTTGAATAGGCCTTC
-TCAGAGAGTGTGTGAAACTTTAAGTAATAGTTAATAAGAGTAAATCGTTAATATACGTA
-TAAGCCGATCAGAAGGATATAACTTATTAAAATTATATAACTCTTTTTGTTTCAGGTTT
-TAAGTTGAGTTTTTGTCAATTCACAAACGGAAATTATGTCTTATTTGAAGCCACCTCAT
-TATGCCATG
-
->>Moccul.mesp.enhancer 60
-
-AATCGGTGAAACCATATATTTCTATATATGTTGGGATTCGGTGGGATGAAATTATGTTA
-TTTAGAACCGACTTACATTTGTGCATCTCTGACTGACTTGCACGACAAATATCGTTGTA
-CCATCGGTTGGTTGATGGACGCCATCATCACCCAAATGATTGCACCACCGATCCCAAGT
-GACCATGACGTGTGTTTGATGTATGGATCCGTGTCCCAACTGAAACACGAAATTGTTAA
-AACGTAATATTAAACGTTGCAAATGGACAAGAGACTGAAAGTAGATGACAGCTTAAACT
-AAATAATTTGTCAAGTGGCCGTTTGTTATAGTTTTGTATGTTTTGGTTAAATATTTCAC
-TTCTTACTTGAAGAAATTGTCTCTTTTCCCAATTCTCATGGCCTCCAGAACTTGATCAA
-AACCCCCAACAGTTGCACTTGTCTTTGCAATAACAAGAATCATTCCAAGGACCATTACA
-CCAGCCTGAACAACATCTGTCCATATGACTCCTTTGATGCCGCCCTGTGAAGAAGAGGG
-TTGAAACTATTGCATCAAACACATTAACAGAGAAATTCAACATTATACATCGTACCAAA
-AAGTGTGTTGTGACAAAGATTTTAAAATTTTACAACTATAATACCGATCCGGAATGTTA
-TTTCAGAAGAACCGAGGTACTGTCGGTAAGTGCTTGAAGGTCAAGAAATTGGCGAAGTA
-TTGCACAGGTAGCAAAAGATGCAACATCTCGATTCTCGACGTAAAGTTGCAGACAATTA
-ATTAATTAAACACTTCCGACATGATTGATCATCGCCGTTATCAGGAAAACTGATAACAT
-TATCGCAAGTTTTATCGAGAACTGATTGCAAGGCGATAAGACTGGATTCCCTTCAACCA
-AGATTGAAATAGCAGGAGGCAAAATGGGGTGAATTATGTCTGGACAAATGACAACTTTA
-TGTACTATAAATCACGCAATTGTTTGTCATAAGCACACATAGTCAACGATAAAGTTATT
-AATTCATTAAATTTAATCGTTTATATTATGAACAAACAAACGATTGTCATGAGAAGTTA
-TTGCGAAGAAACAATCCAGTCTGTTCGATTGCAATGTCCAAATCAACAAACGAGCGTTC
-CCGATGTATTTACTGACCGAGTTCCAAACAAACAAACCTTTATTGCGTATCCTGGGTCT
-ACTGCTTCACATTTCCCTGC
-
->>Moocul.mesp.enhancer 60
-
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTGTGTCGGATCAAGATCTCA
-TCTCTACCCCAAACTCAAACCCCACCTACACTTGAGGTATTTGTCACAACGACATAACA
-ACAAGAAATGGACGGATTGAGTGAAATTTCTAATGAATTTGTAATCAACTTATTCGTTT
-TATTGACATCATTTGGCAACTGATGGTATATGGATCCATTATAGCACATCATACCATTA
-CTTTATAATGGAATCCATACCATTAATGTTACTTGCGATGCGCACAGTGTAGCATATAC
-ATAAGAATGGTTTCAGGCTATTCGACTATTGTACATACATTTGTGCGTCTCTCATTGAC
-TTGCATGACAAATATCGTTGTACCATCGGTTGATTAATAGCTGCCATCATCACCCAGAT
-GATGGCGCCACCGATCCCCAGTGACCAAGATGTGTGTTTGATGTATGGATCCGTATCCC
-AACTGAAACATGAAATTGTGAAGCGTACTCAGTGCTGGGCAATAAACTGAAACGATGTG
-AAAACATCCACTGCAAAATTTCAGTACAATTCGCATGGTTCTGATTAAGATAATGGAAT
-ATTACAATTTCAGTAATAGAGTTGATAACGGAAAATAAGTATACTTATGGGTTTATACT
-TATTTTATTATAAAGGTTGTTAAAAAAGTTAAAAAATAGTTGTGGATATCGGTCCAAAA
-ACTTAAAATAACCCATCAAATAGCTTTCAATTCGTACTTGAAGAAGTTGTCTCTTTTTC
-CAACCCTCATCGCCTCCATCACTTGATCAAAGCCTCCAACAATTGCACTTGTCTTCGCA
-ATCACAAGAATCATTCCGAGTATCATGACGCCAGCCTGCACGACATCCGTCCATATGAC
-TCCTTTGATGCCACCCTGTTGAAAGTGAAAGGTTATGTGATCGGTACGCAGATAAAGTA
-TGGGAAATAAGACAGTCTTACATGACCGGTCACGGTCATGTAACCTAAACCATGACTTA
-CACAGATCAAGATCTATTACAACATGCTATATACGGTTATAATATACATTGTGTTTCAA
-TTGTCAATTAAGTACCACGAACCATCCATCACATTAAAGTTAATACTTTATAACAGAAG
-CCAGCATTAATTCTGTCAAAAATATTTGCAATATTCACTGGTGGTTTCGATTTTAAGAT
-ATCACAAATAATGTTTTCCAAAAATTTCTGTCAATGAAACCGAGATGTTGGATTACGTC
-GGTAATTAGTAGCAGAAGTCGATGCAATATATCTCATCACATATGTTTACAGACAAATT
-AATTAAACCCTTCCGACATGATTGGTCATCACCGCTATCACTAAAGCTGATAACATTAT
-CGCAAGTTTTATCGAAAACTGATTGCAAGGCGATAAGACTGGATTGTCTTCGACGAAGC
-TTGAAATAGCAGGAGGCAAAACGGAGTGAATTATGTCTGGACAAATACTGACTCTCTGT
-TCTATAAATTCCTTCATTGTTTGTCATAAGCACACATTGTCAACGATAAAGTTATTAAT
-TCATTAAATTTAATCGTTTATATTATGAACAAACAAACGATTGTCATGAGAAGTTATTA
-TGAAGAAACAATCCAGTCAGTATCGTCACAATGTCCGAATCAACAAGCGGGCGTTCCCG
-GTGTATTTACCACCCAAGTTCCAAACAAACAAACGTTTATTGCGTATC
-
->>Moocci.mesp.enhancer 60
-
-GTGTTTAGCGATCACGGTTCAAGTTTAGGCTACATCGCTTTTTCCATCGGTTTGCCTAA
-ACTTGCATGCTGTATACAGTATTAAGAAGGTCTTGTTTAACAATGTTCCTTAAATGTTA
-TTGACATACAAAGCAAACTTTGTGTTAAAAGCCTACTTTAATGTGAAGACCAACATAAA
-AAAATTATCGGATAGTATAACTTACTCAAAAAAGTTAAGTCTTTGTCCTCTTTGCAAAG
-CTGCAGTAACTTTATCGAATCCCCCAAGATACACGGATGTTCTGATGATAACTAGAAGC
-ATCCCCACTATCATTACTCCAGCTTGTACAACGTCTGTCCATATCACACCTTTTAAACC
-ACCCTGGAAATTAAATCATTATTATTATTAAAGATAAAAACCATTTATAAGCCTATTTA
-CAATACAGTTCCAAATTTAATCTGCCAATTCGATTGAACGTTTTTCAATGAAGTAAAAT
-ATCTCTCACAATCTTGTATTGAGCCTTTAAAATAGCCTTTTAAATGAAAATCTATATCT
-GACAAAATAGGCTTTGACGTGATTTGAACGCCGTACCTCATGCTCGTATAAATACCTAA
-TTTGTTGCGGAATTTCTACTTCAATATAAAAAGTATGCAAATACATACATAATAGTTAT
-TGAAAAGAATTTAAATCATCAAATTTTATGTCTGTTGTAGCCTAAATAGTGTTTTATTT
-AAGTAAATCTACACTGCGCTTCAGTTCAAACCAACCGTGCCTTGAACTACGGGCAGTGC
-GGTTGCTATAGACGTTATGCTTACGTAAACTAGTGCAAAGAATTTGTTGGAAAGTGTTA
-ATTGATATCCGACCACCGACTGTGTTATCTTATCGTTTTGATAGATAAGAGCTGATAAC
-ACTGATAATAGACTAATTAACTATAGCAGTTAATTTTTATTAAAATTTTCACTTTTCGG
-ACATGAAAATTTGTCTAAAACCCAAACTTCCAAACTTCATCTATATAAGGAAAGAATTT
-TATTGAAATGGCATACTCAATTCATCAGTATATATCATCTATATCTATATACGGTGGGT
-AATACGTCGTAATTGATATCGGACAAAGTAAAAACTGCATATTGAAGCGTTAGAAGAAA
-GTTGTTCAATTCAACATTTTAACAAAATG
-
->>Cirobu.mesp.enhancer 60
-
-TTTTACATTTGAAATGTGATTAATTACGAAAATCCAGCGAATAGAATTGTCACAACAAG
-TCATTAGCGACGGATATTTCGCCTTTGAAACTTAAAGGCGATAATGACTTTGCCCGTTT
-CATGCGGCGATAAACGAACTAATTAGACACCTCCTACAGATATAATGGTAATTCAGAAT
-CGTGTGGTTATGTAATTCACAAAAACATTTTAACAAAACAGGTTGATTTGAAACTTGTA
-TTATGGAACTCAGTATGCATCAGGTAAGACGACGTGTACAATTTTTTCCAAAATAACGA
-ATATA
-'''
