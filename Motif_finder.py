@@ -5,317 +5,68 @@ import collections
 def main():
     #the goal of this script is to identify the most commonly-occurring DNA sequences (motifs) 
     #within a certain range (given in terms of base pairs) of a known co-motif (also given)
-    #
     inputs = ParseArgs(sys.argv)
     motifs_input = inputs[0]
     files_list = inputs[1]
     window = inputs[2]
     motif_size = inputs[3]
 
-    motifs_dict1 = {}
+    motif_dict = {}
     motif_possibilities = {}
-    motifs_generated = []
     start_site_dict = {}
+    
     for motif in motifs_input:
         motif_possibilities[motif] = GenerateComplements(motif)
-        motifs_dict1[motif] = {}
+        motif_dict[motif] = {}
 
-    sequences_dict = {} #dictionary where key is alignment and value is list of alignment
-    files_dict = {} #dictionary where the key is the file and vaule is its alignments
+    sequences_dict = {} #dictionary where key is sequence name and value is the sequence
+    files_dict = {} #dictionary where the key is the file and value is a dictionary of its sequences
 
-    newfiles_list = []
     for filename in files_list:
-        file = open(filename, "r")
-        sequence_as_list = file.readlines()
-        '''
-        This was code to write out to a word document, but I ended up scrapping it, however, the code to write out to it was difficult to write so i just commented it out in case I wanted to come back to it later
-        num_times = 0
-        p = new_file.add_paragraph()
-        list_styles = new_file.styles
-        highlighted = list_styles.add_style('highlighted', WD_STYLE_TYPE.CHARACTER)
-        highlighted.base_style = list_styles['Default Paragraph Font']
-        highlighted.font.highlight_color = WD_COLOR_INDEX.YELLOW
-        string_sequence = ''.join(sequence)
-        for motif in motifs_list:
-            curr_motif = string_sequence.split(motif)
-            for i in range(len(curr_motif) - 1):
-                if num_times == 0:
-                    p.add_run(curr_motif[i])
-                    if len(curr_motif) > 1:
-                        motif_run = p.add_run(text=motif, style=highlighted).font
-                        motif_run.highlight_color = WD_COLOR_INDEX.YELLOW
-        new_file.add_paragraph(p.text)
-        new_file.save(new_filename)
-        '''
-        alignment = ""
-        i = 0
-        #parses sequences in every file. Adds the name as the key in dictionary 
-        #"sequences_dict" and value is the sequence
-        while i < len(sequence_as_list):
-            if len(sequence_as_list[i]) > 0 and sequence_as_list[i][0] != '>':
-                one_line += sequence_as_list[i].strip("\n")
-                i += 1
-            elif sequence_as_list[i][0] == '>':
-                #get sequence length
-                if i > 0:
-                    sequences_dict[sequences_name] = one_line
-                sequences_name = sequence_as_list[i]
-                one_line = ""
-                i += 2
-            if i == (len(sequence_as_list) - 1):
-                one_line += sequence_as_list[i].strip("\n")
-                sequences_dict[sequences_name] = one_line
-
+        parseSeqs(filename, sequences_dict)
         files_dict[filename] = sequences_dict
-        sequences_dict = {}
-
-    #initialize dictionaries
-    for motif in motifs_dict1:
+        sequences_dict = {} #reset sequence dictionary for a new file
+        
+    #initialize dictionaries which contain 
+    for motif in motif_dict:
         for filename in files_dict:
-            motifs_dict1[motif][filename] = {}
+            motif_dict[motif][filename] = {}
             start_site_dict[filename] = {}
             for sequence in files_dict[filename]:
-                #motifs_dict1 will contain index where motif occurs
-                motifs_dict1[motif][filename][sequence] = []
-                #start_site_dict contains the start site for every sequence in every file
+                #motif_dict will contain index where motif occurs
+                motif_dict[motif][filename][sequence] = []
+                #start_site_dict contains the predicted start site for every sequence in every file
                 start_site_dict[filename][sequence] = 0
                 
-    keys = list(motif_possibilities.keys())
     #find where each motif occurs in each sequence
     for filename in files_dict:
         for name in files_dict[filename]:
-            atgFound = False
-            for motif in motifs_dict1:
-                sequence1 = files_dict[filename][name]
-                i = len(sequence1) - 1
-                j = 0
-                while i in range(len(sequence1)):
-                    if atgFound == True:
-                        if (i - len(motif)) >= 0:
-                            potential_motif1 = sequence1[i - len(motif):i]
-                            complement = GenerateComplement(potential_motif1)
-                            if potential_motif1 in motif_possibilities[motif] or complement in motif_possibilities[motif]:
-                                motifs_dict1[motif][filename][name].append(i)
-
-                        i -= 1
-                        j -= 1
-
-                    else:
-                        #find start site (assuming first ATG is start site and that DNA is 5'-3')
-                        potential_site = sequence1[(i - 2):(i + 1)]
-                        if potential_site == "ATG" or potential_site == "CAT":
-                            start_site = i - 2
-                            start_site_dict[filename][name] = start_site
-                            atgFound = True
-                        if atgFound == False:
-                            i -= 1
-                        elif atgFound == True:
-                            i = start_site
-    #this entire loop creates a sequence which contains the 
-    #sequence n base pairs up and downstream of a known "motif" occurrence
+            findMotifsInSeqs(motif_dict, motif_possibilities, start_site_dict, files_dict, filename, name)
+            
+    #this entire loop creates a concatenated sequence which created from the 
+    #sequences n base pairs up and downstream of a known "motif" occurrence.
     #overlap is accounted for and if this occurs, the algorithm pulls less 
     #than "window" base pairs
-    cluster = {}
+    window_as_string = {}
     window_in_list = {}
-    for motif in motifs_dict1:
-        cluster[motif] = {}
+    for motif in motif_dict:
+        window_as_string[motif] = {}
         window_in_list[motif] = {}
         print("For the motif " + motif + ":")
         for filename in files_dict:
-            cluster[motif][filename] = {}
+            window_as_string[motif][filename] = {}
             window_in_list[motif][filename] = {}
             print("\tIn file " + filename + ":")
             for name in files_dict[filename]:
-                #grab windows up and down stream of motif and concatenates them
                 print("\t\tIn sequence " + name.strip("\n") + ":")
-                cluster[motif][filename][name] = {}
-                window_in_list[motif][filename][name] = []
                 sequence1 = files_dict[filename][name]
-                motif_list = motifs_dict1[motif][filename][name]
-                motif_index = 0
-                cluster[motif][filename][name] = ""
-                concatenated_windows = ""
-                for index in motifs_dict1[motif][filename][name]:
-                    curr_motif_size = len(motif)
-                    downstream = start_site_dict[filename][name] - index
-                    start = index
-                    curr_window = sequence1[start:(index + window + 1)]
-                    if motif_index < (len(motif_list) - 1):
-                        upstream = (motif_list[motif_index] - motif_list[motif_index + 1]) - curr_motif_size
-                    else:
-                        upstream = index - curr_motif_size
-                    not1st_downstream = (motif_list[motif_index - 1] - motif_list[motif_index]) - curr_motif_size
-                    #prevents first window from overlapping start site and also prevents overlap in upstream
-                    if upstream >= (2*window) and downstream >= window and motif_index == 0:
-                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                        curr_window1 = sequence1[start:start + window]
-                        concatenated_windows += curr_window + curr_window1
-                        window_in_list[motif][filename][name].append(curr_window)
-                        window_in_list[motif][filename][name].append(curr_window1)
-                    #accounts for smaller than "window" sequence size downstream
-                    elif upstream >= (2*window) and downstream < window and motif_index == 0:
-                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                        curr_window1 = sequence1[start:start + downstream]
-                        concatenated_windows += curr_window + curr_window1
-                        window_in_list[motif][filename][name].append(curr_window)
-                        window_in_list[motif][filename][name].append(curr_window1)
-                    #accounts for smaller than "window" sequence size upstream
-                    elif upstream < (2*window) and downstream >= window and motif_index == 0:
-                        if upstream > window:
-                            beg_of_upstream_window = 0
-                            if motif_index < (len(motif_list) - 1):
-                                beg_of_upstream_window = start - curr_motif_size - (upstream - window)
-                            else:
-                                if (start - curr_motif_size - window) < 0:
-                                    beg_of_upstream_window = 0
-                                else:
-                                    beg_of_upstream_window = start - window - curr_motif_size
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                            curr_window1 = sequence1[start:start + window]
-
-                        else:
-                            if motif_index < (len(motif_list) - 1):
-                                beg_of_upstream_window = start - curr_motif_size
-                            else:
-                                if (start - curr_motif_size - window) < 0:
-                                    beg_of_upstream_window = 0
-                                else:
-                                    beg_of_upstream_window = start - window - curr_motif_size
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                            curr_window1 = sequence1[start:start + window]
-
-                        concatenated_windows += curr_window + curr_window1
-                        window_in_list[motif][filename][name].append(curr_window)
-                        window_in_list[motif][filename][name].append(curr_window1)
-                    #accounts for case when both up and downstream sequences are less than n base pairs
-                    elif upstream < (2*window) and downstream < window and motif_index == 0:
-                        if upstream > window:
-                            if motif_index < (len(motif_list) - 1):
-                                beg_of_upstream_window = start - curr_motif_size - (upstream - window)
-
-                            else:
-                                if (start - curr_motif_size - window) < 0:
-                                    beg_of_upstream_window = 0
-                                else:
-                                    beg_of_upstream_window = start - window - curr_motif_size
-
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                            curr_window1 = sequence1[start:start + downstream]
-                            concatenated_windows += curr_window + curr_window1
-                            window_in_list[motif][filename][name].append(curr_window)
-                            window_in_list[motif][filename][name].append(curr_window1)
-                        else:
-                            if motif_index < (len(motif_list) - 1):
-                                curr_window = sequence1[start:start + downstream]
-                            else:
-                                if (start - curr_motif_size - window) < 0:
-                                    beg_of_upstream_window = 0
-                                else:
-                                    beg_of_upstream_window = start - window - curr_motif_size
-                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                                curr_window1 = sequence1[start:start + downstream]
-
-                        concatenated_windows += curr_window + curr_window1
-                        window_in_list[motif][filename][name].append(curr_window)
-                        window_in_list[motif][filename][name].append(curr_window1)
-
-                    if motif_index > 0:
-                        #if both windows are large enough to allow for normal window
-                        if upstream >= (2*window) and not1st_downstream >= (2*window):
-                            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                            curr_window1 = sequence1[start:start + window]
-                            concatenated_windows += curr_window + curr_window1
-                            window_in_list[motif][filename][name].append(curr_window)
-                            window_in_list[motif][filename][name].append(curr_window1)
-
-                        #if window upstream is large enough to allow for a normal window to be taken but window downstream will lead to overlap unless adjusted
-                        elif upstream >= (2*window) and not1st_downstream < (2*window):
-                            if not1st_downstream >= window:
-                                curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
-
-                            else:
-                                if not1st_downstream > 0:
-                                    curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                                    curr_window1 = sequence1[start:start + not1st_downstream]
-                                else:
-                                    curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                                    curr_window1 = ""
-                            concatenated_windows += curr_window + curr_window1
-                            window_in_list[motif][filename][name].append(curr_window)
-                            window_in_list[motif][filename][name].append(curr_window1)
-
-                        #if both windows up and downstream will lead to overlap unless adjusted
-                        elif upstream < (2*window) and not1st_downstream < (2*window):
-                            if not1st_downstream >= window:
-                                end_of_downstream_window = start + window
-
-                            else:
-                                if not1st_downstream > 0:
-                                    end_of_downstream_window = start + not1st_downstream
-                                else:
-                                    end_of_downstream_window = start
-
-                            if upstream > window:
-                                #gets window upstream of size that allows for the next index to get downstream window of size of window variable without overlapping
-                                if motif_index < (len(motif_list) - 1):
-                                    beg_of_upstream_window = start - curr_motif_size - (upstream - window)
-                                else:
-                                    if (start - curr_motif_size - window) < 0:
-                                        beg_of_upstream_window = 0
-                                    else:
-                                        beg_of_upstream_window = start - window
-
-                            else:
-                                if motif_index < (len(motif_list) - 1):
-                                    beg_of_upstream_window = start - curr_motif_size
-                                else:
-                                    if (start - curr_motif_size - window) < 0:
-                                        beg_of_upstream_window = 0
-                                    else:
-                                        beg_of_upstream_window = start - window - curr_motif_size
-
-                            curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                            curr_window1 = sequence1[start:end_of_downstream_window]
-                            concatenated_windows += curr_window + curr_window1
-                            window_in_list[motif][filename][name].append(curr_window)
-                            window_in_list[motif][filename][name].append(curr_window1)
-
-                        #if window downstream is large enough to allow for a normal window to be taken but window upstream will lead to overlap unless adjusted
-                        elif upstream < (2*window) and not1st_downstream >= (2*window):
-                            if upstream > window:
-                                if motif_index < (len(motif_list) - 1):
-                                    beg_of_upstream_window = start - curr_motif_size - (upstream - window)
-                                else:
-                                    if (start - curr_motif_size - window) < 0:
-                                        beg_of_upstream_window = 0
-                                    else:
-                                        beg_of_upstream_window = start - window - curr_motif_size
-
-                                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
-                                curr_window1 = sequence1[start:start + window]
-
-                            else:
-                                if motif_index < (len(motif_list) - 1):
-                                    curr_window = sequence1[start:start + window]
-                                    curr_window1 = ""
-                                else:
-                                    if (start - curr_motif_size - window) < 0:
-                                        curr_window = sequence1[0:start - curr_motif_size]
-                                        curr_window1 = sequence1[start:start + window]
-                                    else:
-                                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
-                                        curr_window1 = sequence1[start:start + window]
-                            concatenated_windows += curr_window + curr_window1
-                            window_in_list[motif][filename][name].append(curr_window)
-                            window_in_list[motif][filename][name].append(curr_window1)
-
-                    motif_index += 1
-
-                cluster[motif][filename][name] = concatenated_windows
+                motif_list = motif_dict[motif][filename][name]
+                #grab windows up and down stream of motif and concatenates them
+                createSubStrings(start_site_dict, window_as_string, window_in_list, sequence1, motif_list, filename, name, motif, window)
                 if len(window_in_list[motif][filename][name]) > 0:
                     #finds 10 most common motifs of a previously specified size, one using a string 
                     #and another using a list (in order to see how many accidental motifs were found in string case)
-                    co_motifs = FindRandMotifs(concatenated_windows, motif_size)
+                    co_motifs = FindRandMotifs(window_as_string[motif][filename][name], motif_size)
                     co_motifs1 = FindRandMotifs(window_in_list[motif][filename][name], motif_size)
                     print("List ")
                     for key in co_motifs1:
@@ -324,9 +75,249 @@ def main():
                     for key in co_motifs:
                         print(str(key) + ": " + str(co_motifs[key]))
 
+
+def createSubStrings(start_site_dict, window_as_string, window_in_list, sequence1, motif_list, filename, name, motif, window):
+
+    motif_index = 0
+    window_in_list[motif][filename][name] = []
+    window_as_string[motif][filename][name] = ""
+    concatenated_windows = ""
+    for index in motif_list:
+        curr_motif_size = len(motif)
+        downstream = start_site_dict[filename][name] - index
+        start = index
+        curr_window = sequence1[start:(index + window + 1)]
+        curr_window1 = ""
+        if motif_index < (len(motif_list) - 1):
+            upstream = (motif_list[motif_index] - motif_list[motif_index + 1]) - curr_motif_size
+        else:
+            upstream = index - curr_motif_size
+        not1st_downstream = (motif_list[motif_index - 1] - motif_list[motif_index]) - curr_motif_size
+        #prevents first window from overlapping start site and also prevents overlap in upstream
+        if upstream >= (2*window) and downstream >= window and motif_index == 0:
+            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+            curr_window1 = sequence1[start:start + window]
+            concatenated_windows += curr_window + curr_window1
+            window_in_list[motif][filename][name].append(curr_window)
+            window_in_list[motif][filename][name].append(curr_window1)
+        #accounts for smaller than "window" sequence size downstream
+        elif upstream >= (2*window) and downstream < window and motif_index == 0:
+            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+            curr_window1 = sequence1[start:start + downstream]
+            concatenated_windows += curr_window + curr_window1
+            window_in_list[motif][filename][name].append(curr_window)
+            window_in_list[motif][filename][name].append(curr_window1)
+        #accounts for smaller than "window" sequence size upstream
+        elif upstream < (2*window) and downstream >= window and motif_index == 0:
+            if upstream > window:
+                beg_of_upstream_window = 0
+                if motif_index < (len(motif_list) - 1):
+                    beg_of_upstream_window = start - curr_motif_size - (upstream - window)
+                else:
+                    if (start - curr_motif_size - window) < 0:
+                        beg_of_upstream_window = 0
+                    else:
+                        beg_of_upstream_window = start - window - curr_motif_size
+                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                curr_window1 = sequence1[start:start + window]
+
+            else:
+                if motif_index < (len(motif_list) - 1):
+                    beg_of_upstream_window = start - curr_motif_size
+                else:
+                    if (start - curr_motif_size - window) < 0:
+                        beg_of_upstream_window = 0
+                    else:
+                        beg_of_upstream_window = start - window - curr_motif_size
+                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                curr_window1 = sequence1[start:start + window]
+
+            concatenated_windows += curr_window + curr_window1
+            window_in_list[motif][filename][name].append(curr_window)
+            window_in_list[motif][filename][name].append(curr_window1)
+        #accounts for case when both up and downstream sequences are less than n base pairs
+        elif upstream < (2*window) and downstream < window and motif_index == 0:
+            if upstream > window:
+                if motif_index < (len(motif_list) - 1):
+                    beg_of_upstream_window = start - curr_motif_size - (upstream - window)
+
+                else:
+                    if (start - curr_motif_size - window) < 0:
+                        beg_of_upstream_window = 0
+                    else:
+                        beg_of_upstream_window = start - window - curr_motif_size
+
+                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                curr_window1 = sequence1[start:start + downstream]
+                concatenated_windows += curr_window + curr_window1
+                window_in_list[motif][filename][name].append(curr_window)
+                window_in_list[motif][filename][name].append(curr_window1)
+            else:
+                if motif_index < (len(motif_list) - 1):
+                    curr_window = sequence1[start:start + downstream]
+                else:
+                    if (start - curr_motif_size - window) < 0:
+                        beg_of_upstream_window = 0
+                    else:
+                        beg_of_upstream_window = start - window - curr_motif_size
+                    curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                    curr_window1 = sequence1[start:start + downstream]
+
+            concatenated_windows += curr_window + curr_window1
+            window_in_list[motif][filename][name].append(curr_window)
+            window_in_list[motif][filename][name].append(curr_window1)
+
+        if motif_index > 0:
+            #if both windows are large enough to allow for normal window
+            if upstream >= (2*window) and not1st_downstream >= (2*window):
+                curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                curr_window1 = sequence1[start:start + window]
+                concatenated_windows += curr_window + curr_window1
+                window_in_list[motif][filename][name].append(curr_window)
+                window_in_list[motif][filename][name].append(curr_window1)
+
+            #if window upstream is large enough to allow for a normal window to be taken but window downstream will lead to overlap unless adjusted
+            elif upstream >= (2*window) and not1st_downstream < (2*window):
+                if not1st_downstream >= window:
+                    curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size] + sequence1[start:start + window]
+
+                else:
+                    if not1st_downstream > 0:
+                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                        curr_window1 = sequence1[start:start + not1st_downstream]
+                    else:
+                        curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                        curr_window1 = ""
+                concatenated_windows += curr_window + curr_window1
+                window_in_list[motif][filename][name].append(curr_window)
+                window_in_list[motif][filename][name].append(curr_window1)
+
+            #if both windows up and downstream will lead to overlap unless adjusted
+            elif upstream < (2*window) and not1st_downstream < (2*window):
+                if not1st_downstream >= window:
+                    end_of_downstream_window = start + window
+
+                else:
+                    if not1st_downstream > 0:
+                        end_of_downstream_window = start + not1st_downstream
+                    else:
+                        end_of_downstream_window = start
+
+                if upstream > window:
+                    #gets window upstream of size that allows for the next index to get downstream window of size of window variable without overlapping
+                    if motif_index < (len(motif_list) - 1):
+                        beg_of_upstream_window = start - curr_motif_size - (upstream - window)
+                    else:
+                        if (start - curr_motif_size - window) < 0:
+                            beg_of_upstream_window = 0
+                        else:
+                            beg_of_upstream_window = start - window
+
+                else:
+                    if motif_index < (len(motif_list) - 1):
+                        beg_of_upstream_window = start - curr_motif_size
+                    else:
+                        if (start - curr_motif_size - window) < 0:
+                            beg_of_upstream_window = 0
+                        else:
+                            beg_of_upstream_window = start - window - curr_motif_size
+
+                curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                curr_window1 = sequence1[start:end_of_downstream_window]
+                concatenated_windows += curr_window + curr_window1
+                window_in_list[motif][filename][name].append(curr_window)
+                window_in_list[motif][filename][name].append(curr_window1)
+
+            #if window downstream is large enough to allow for a normal window to be taken but window upstream will lead to overlap unless adjusted
+            elif upstream < (2*window) and not1st_downstream >= (2*window):
+                if upstream > window:
+                    if motif_index < (len(motif_list) - 1):
+                        beg_of_upstream_window = start - curr_motif_size - (upstream - window)
+                    else:
+                        if (start - curr_motif_size - window) < 0:
+                            beg_of_upstream_window = 0
+                        else:
+                            beg_of_upstream_window = start - window - curr_motif_size
+
+                    curr_window = sequence1[beg_of_upstream_window:start - curr_motif_size]
+                    curr_window1 = sequence1[start:start + window]
+
+                else:
+                    if motif_index < (len(motif_list) - 1):
+                        curr_window = sequence1[start:start + window]
+                        curr_window1 = ""
+                    else:
+                        if (start - curr_motif_size - window) < 0:
+                            curr_window = sequence1[0:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + window]
+                        else:
+                            curr_window = sequence1[start - window - curr_motif_size:start - curr_motif_size]
+                            curr_window1 = sequence1[start:start + window]
+                concatenated_windows += curr_window + curr_window1
+                window_in_list[motif][filename][name].append(curr_window)
+                window_in_list[motif][filename][name].append(curr_window1)
+
+        motif_index += 1
+
+    window_as_string[motif][filename][name] = concatenated_windows
+    
+
+def findMotifsInSeqs(motif_dict, motif_possibilities, start_site_dict, files_dict, filename, name):
+    atgFound = False
+    for motif in motif_dict:
+        sequence1 = files_dict[filename][name]
+        i = len(sequence1) - 1
+        j = 0
+        while i in range(len(sequence1)):
+            if atgFound == True:
+                if (i - len(motif)) >= 0:
+                    potential_motif1 = sequence1[i - len(motif):i]
+                    complement = GenerateComplement(potential_motif1)
+                    if potential_motif1 in motif_possibilities[motif] or complement in motif_possibilities[motif]:
+                        motif_dict[motif][filename][name].append(i)
+
+                i -= 1
+                j -= 1
+
+            else:
+                #find start site (assuming first ATG is start site and that DNA is 5'-3') if hasn't been found
+                potential_site = sequence1[(i - 2):(i + 1)]
+                if potential_site == "ATG" or potential_site == "CAT":
+                    start_site = i - 2
+                    start_site_dict[filename][name] = start_site
+                    atgFound = True
+                if atgFound == False:
+                    i -= 1
+                elif atgFound == True:
+                    i = start_site
+
+def parseSeqs(filename, sequences_dict):
+    file = open(filename, "r")
+    sequence_as_list = file.readlines()
+    one_line = ""
+    i = 0
+    #parses sequences in every file. Adds the sequence name as the key in dictionary 
+    #"sequences_dict" and value is the sequence itself
+    while i < len(sequence_as_list):
+        if len(sequence_as_list[i]) > 0 and sequence_as_list[i][0] != '>':
+            one_line += sequence_as_list[i].strip("\n")
+            i += 1
+        elif sequence_as_list[i][0] == '>':
+            if i > 0:
+                sequences_dict[sequences_name] = one_line
+            sequences_name = sequence_as_list[i]
+            one_line = ""
+            i += 2
+        if i == (len(sequence_as_list) - 1):
+            one_line += sequence_as_list[i].strip("\n")
+            sequences_dict[sequences_name] = one_line
+
 #parses arguments given at program call
 def ParseArgs(inputs):
     i = 0
+    if len(inputs):
+        print("Hello, there are 4 parameters available to you: known motifs (should be preceded by -m), files (please input full path and precede by -f), window size to search around motifs (-ws), and size which you want co-motifs to be (-ms).")
+
     motifs_input = []
     onMotifs = False
     files_list = []
@@ -377,7 +368,9 @@ def ParseArgs(inputs):
     return [motifs_input, files_list, window, motif_size]
 
 #have not changed to be used as an independent function
-def CheckWindows(concatenated_window, window, cluster):
+"""
+def CheckWindows(concatenated_window, window, cluster, index):
+    k = 0
     while k in range((index - window), (index + window + 1)):
         curr_potential_motif1 = sequence1[k:k + motif_size]
         complement = GenerateComplement(curr_potential_motif1)
@@ -388,12 +381,14 @@ def CheckWindows(concatenated_window, window, cluster):
         else:
             cluster[motif][filename][name][index][curr_potential_motif1] = [(index - k)]
         k += 1
+"""
 
+"""
 #have not changed to be used as an independent function, 
 #it is an algorithm to print out found sequence with highlighted motifs to terminal
-def PrintHighlighted(motifs_dict1):
+def PrintHighlighted(motif_dict):
 
-    for motif in motifs_dict1:
+    for motif in motif_dict:
         for filename in files_dict:
             highlighted_sequences[filename] = {}
             for name in files_dict[filename]:
@@ -410,6 +405,7 @@ def PrintHighlighted(motifs_dict1):
                 print(files_dict[filename][name])
 
     return sequence
+"""
 
 #create complement strand of sequence given
 def GenerateComplement(sequence):
@@ -574,6 +570,7 @@ def FindRandMotifs(sequence, motif_size):
 
     if type(sequence) is str:
         i = 0
+        j = 0
         print(sequence)
         while i <= (len(sequence) - motif_size) and len(sequence) > 3:
             curr_potential_motif1 = sequence[i:i + motif_size]
@@ -602,7 +599,6 @@ def FindRandMotifs(sequence, motif_size):
     if type(sequence) is list:
         index = 0
         for window in sequence:
-            declared = False
             if len(window) > 3:
                 sequence1 = window
                 i = 0
