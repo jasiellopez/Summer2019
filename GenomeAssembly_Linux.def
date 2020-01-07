@@ -1,0 +1,96 @@
+Bootstrap: library
+From: centos:sha256.f90b83a0dad191a4e383e901fdd6c76db209e177c7b86ae4c6e0fb08b8b7470c
+
+%environment
+    export LC_ALL=C
+
+%post 
+    yum update -y && yum groupinstall -y 'Development Tools'
+    yum makecache
+    mkdir genome/
+    yes | yum install unzip
+    yes | yum install centos-release-scl
+    yes | yum install devtoolset-3 -y
+    scl enable devtoolset-3 bash
+    yes | yum -y install hostname
+    yes | yum install zlib
+    yes | yum install zlib-devel
+    yes | yum install tbb
+    yes | yum install pigz
+    yes | yum install graphviz
+    yes | yum install java
+    yes | yum install perl
+    yes | yum install wget
+    yes | yum install perl-devel
+    yes | yum install perl-CPAN
+    yes | yum --enablerepo=extras install epel-release
+    yes | yum install cpanspec -y
+    wget https://github.com/BenLangmead/bowtie/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd bowtie-master
+    make NO_TBB=1 
+    cd ../..
+    wget https://github.com/lh3/bwa/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd bwa-master
+    make
+    cp bwa /usr/local/bin/
+    cd ../..
+    wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
+    unzip Trimmomatic-0.39.zip
+    chmod +rx Trimmomatic-0.39
+    mv Trimmomatic-0.39 genome/
+    wget http://platanus.bio.titech.ac.jp/?ddownload=145
+    mv index.html?ddownload=145 platanus
+    chmod +rx platanus
+    mv platanus genome/
+    wget https://github.com/josephryan/JFR-PerlModules/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd JFR-PerlModules-master
+    perl Makefile.PL
+    make
+    make install
+    cd ../..
+    wget https://github.com/josephryan/FastqSifter/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd FastqSifter-master
+    perl Makefile.PL
+    make
+    make install
+    cd ../..
+    wget https://github.com/josephryan/matemaker/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd matemaker-master
+    perl Makefile.PL
+    make
+    make install
+    cd ../..
+    wget https://github.com/josephryan/RyanLabShortReadAssembly/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd RyanLabShortReadAssembly-master
+    perl Makefile.PL
+    make
+    make install
+    cd ../..
+    wget https://github.com/nsoranzo/sspace_basic/archive/master.zip
+    unzip master.zip
+    mv sspace_basic-master genome/
+    wget https://github.com/aminallam/karect/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd karect-master/
+    make
+    cd ../..

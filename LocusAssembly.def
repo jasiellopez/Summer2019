@@ -1,0 +1,45 @@
+Bootstrap: library
+From: centos:sha256.f90b83a0dad191a4e383e901fdd6c76db209e177c7b86ae4c6e0fb08b8b7470c
+
+%setup
+    cp -R ~/Desktop/allpathslg-44837 ${SINGULARITY_ROOTFS}
+    
+%environment
+    export LC_ALL=C
+
+%post 
+    yum update -y && yum groupinstall -y 'Development Tools'
+    yum makecache
+    mkdir genome/
+    yum install unzip
+    yes | yum install centos-release-scl
+    yes | yum install devtoolset-6 -y
+    scl enable devtoolset-6 bash
+    yes | yum -y install hostname
+    yes | yum install zlib
+    yes | yum install zlib-devel
+    yes | yum install bzip2-libs
+    yes | yum install pigz
+    yes | yum install graphviz
+    yes | yum install java
+    yes | yum install perl
+    yes | yum install wget
+    yes | yum install perl-devel
+    yes | yum install perl-CPAN
+    yes | yum --enablerepo=extras install epel-release
+    yes | yum install cpanspec -y
+    yes | yum install rh-python36
+    scl enable rh-python36 bash
+    yes | yum install ncbi-blast+  
+    wget https://github.com/juliema/aTRAM/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd atram-master
+    make
+    cd ..
+    cd ..
+      
+    
+#install spades
+    

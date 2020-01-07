@@ -1,0 +1,52 @@
+Bootstrap: library
+From: centos:sha256.f90b83a0dad191a4e383e901fdd6c76db209e177c7b86ae4c6e0fb08b8b7470c
+
+%setup
+    cp -R ~/Desktop/allpathslg-44849 ${SINGULARITY_ROOTFS}
+    
+%environment
+    export LC_ALL=C
+
+%post 
+    yum update -y && yum groupinstall -y 'Development Tools'
+    yum makecache
+    mkdir genome/
+    yes | yum install unzip
+    yes | yum install centos-release-scl
+    yes | yum install devtoolset-3 -y
+    scl enable devtoolset-3 bash
+    yes | yum -y install hostname
+    yes | yum install zlib
+    yes | yum install zlib-devel
+    yes | yum install tbb
+    yes | yum install pigz
+    yes | yum install graphviz
+    yes | yum install java
+    yes | yum install perl
+    yes | yum install wget
+    yes | yum install perl-devel
+    yes | yum install perl-CPAN
+    yes | yum --enablerepo=extras install epel-release
+    yes | yum install cpanspec -y
+    wget https://github.com/mourisl/Lighter/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd Lighter-master/
+    make
+    cd ../..
+    wget https://github.com/aminallam/karect/archive/master.zip
+    mv master.zip genome/
+    cd genome/
+    unzip master.zip
+    cd karect-master/
+    make
+    cd ../..
+    mv allpathslg-44849 genome/
+    cd genome/allpathslg-44849
+    ./configure
+    make
+    make install
+    mv /genome/allpathslg-44849/src/paths/ErrorCorrectReads.pl  /genome/allpathslg-44849/src
+
+
